@@ -1,11 +1,14 @@
 ﻿using System;
-using IntegrationTestDemo.Services;
+using IntegrationTestDemo.DAL;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using IntegrationTestDemo.API.Models;
 using System.Threading.Tasks;
+using AutoMapper;
+using System.Collections.Generic;
+using IntegrationTestDemo.DAL.Models;
 
 namespace IntegrationTestDemo.Controllers
 {
@@ -16,11 +19,12 @@ namespace IntegrationTestDemo.Controllers
 
     public class UserSettingsController : ControllerBase
     {
-        private readonly IUserSettingService _userSettingService;
-
-        public UserSettingsController(IUserSettingService userSettingService)
+        private readonly IUserSettingRepository _userSettingRepository;
+        private IMapper _mapper;
+        public UserSettingsController(IUserSettingRepository userSettingRepository, IMapper mapper)
         {
-            _userSettingService = userSettingService;
+            _userSettingRepository = userSettingRepository;
+            _mapper = mapper;
         }
 
         [HttpPost]
@@ -30,7 +34,8 @@ namespace IntegrationTestDemo.Controllers
             try
             {
                 userSetting.UserId = HttpContext.User.Identity.Name;
-                return Ok(await _userSettingService.AddUserSetting(userSetting));
+                var setting = await _userSettingRepository.AddUserSetting(_mapper.Map<UserSetting>(userSetting));
+                return Ok(_mapper.Map<UserSettingModel>(setting));
             }
             catch (Exception ex)
             {
@@ -44,7 +49,7 @@ namespace IntegrationTestDemo.Controllers
         {
             try
             {
-                var setting = await _userSettingService.GetUserSettingById(id);
+                var setting = await _userSettingRepository.GetUserSettingById(id);
                 if (setting == null)
                 {
                     return StatusCode(StatusCodes.Status404NotFound, "User setting ID is not found");
@@ -53,7 +58,7 @@ namespace IntegrationTestDemo.Controllers
                 {
                     return StatusCode(StatusCodes.Status401Unauthorized, "You do not own this setting.");
                 }
-                await _userSettingService.DeleteUserSetting(id);
+                await _userSettingRepository.DeleteUserSetting(id);
 
                 return Ok();
             }
@@ -69,7 +74,8 @@ namespace IntegrationTestDemo.Controllers
         {
             try
             {
-                return Ok(await _userSettingService.GetUserSettingByUserId(HttpContext.User.Identity.Name));
+                var settings = await _userSettingRepository.GetUserSettingByUserId(HttpContext.User.Identity.Name);
+                return Ok(_mapper.Map<IEnumerable<UserSettingModel>>(settings));
             }
             catch (Exception ex)
             {
@@ -83,7 +89,7 @@ namespace IntegrationTestDemo.Controllers
         {
             try
             {
-                var setting = await _userSettingService.GetUserSettingById(id);
+                var setting = await _userSettingRepository.GetUserSettingById(id);
                 if (setting == null)
                 {
                     return StatusCode(StatusCodes.Status404NotFound, "Cannot find the user setting.");
@@ -115,7 +121,8 @@ namespace IntegrationTestDemo.Controllers
 
             try
             {
-                return Ok(await _userSettingService.GetUserSettingByUserId(userId));
+                var settings = await _userSettingRepository.GetUserSettingByUserId(userId);
+                return Ok(_mapper.Map<IEnumerable<UserSettingModel>>(settings));
             }
             catch (Exception ex)
             {

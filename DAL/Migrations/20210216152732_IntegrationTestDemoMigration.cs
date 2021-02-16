@@ -2,7 +2,7 @@
 
 namespace IntegrationTestDemo.DAL.Migrations
 {
-    public partial class Migrations : Migration
+    public partial class IntegrationTestDemoMigration : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

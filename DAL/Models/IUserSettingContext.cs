@@ -2,7 +2,8 @@
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System.Threading;
 using System.Threading.Tasks;
-namespace IntegrationTestDemo.DAL
+
+namespace IntegrationTestDemo.DAL.Models
 {
     public interface IUserSettingContext
     {

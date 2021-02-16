@@ -1,6 +1,7 @@
 ﻿using IntegrationTestDemo.API;
 using IntegrationTestDemo.Controllers;
 using IntegrationTestDemo.DAL;
+using IntegrationTestDemo.DAL.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;

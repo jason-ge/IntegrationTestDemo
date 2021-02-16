@@ -1,22 +1,21 @@
-﻿using IntegrationTestDemo.API.Models;
-using IntegrationTestDemo.DAL;
+﻿using IntegrationTestDemo.DAL.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace IntegrationTestDemo.Services
+namespace IntegrationTestDemo.DAL
 {
-    public class UserSettingService : IUserSettingService
+    public class UserSettingRepository : IUserSettingRepository
     {
         private readonly UserSettingContext _context;
-        public UserSettingService(UserSettingContext context)
+        public UserSettingRepository(UserSettingContext context)
         {
             _context = context;
         }
 
-        public async Task<UserSettingModel> AddUserSetting(UserSettingModel userSetting)
+        public async Task<UserSetting> AddUserSetting(UserSetting userSetting)
         {
             var setting = await _context.UserSettings.FirstOrDefaultAsync(s => s.UserId == userSetting.UserId && s.SettingKey == userSetting.SettingKey);
             if (setting != null)
@@ -25,21 +24,14 @@ namespace IntegrationTestDemo.Services
             }
             else
             {
-                setting = new UserSetting
-                {
-                    SettingKey = userSetting.SettingKey,
-                    SettingValue = userSetting.SettingValue,
-                    UserId = userSetting.UserId
-                };
-                await _context.UserSettings.AddAsync(setting);
+                await _context.UserSettings.AddAsync(userSetting);
                 await _context.SaveChangesAsync();
 
-                userSetting.UserSettingId = setting.UserSettingId;
                 return userSetting;
             }
         }
 
-        public async Task<UserSettingModel> UpdateUserSetting(UserSettingModel userSetting)
+        public async Task<UserSetting> UpdateUserSetting(UserSetting userSetting)
         {
             var setting = await _context.UserSettings.FirstOrDefaultAsync(s => s.UserSettingId == userSetting.UserSettingId && s.SettingKey == userSetting.SettingKey);
             if (setting == null)
@@ -68,7 +60,7 @@ namespace IntegrationTestDemo.Services
             }
         }
 
-        public async Task<UserSettingModel> GetUserSettingById(int id)
+        public async Task<UserSetting> GetUserSettingById(int id)
         {
             var setting = await _context.UserSettings.FirstOrDefaultAsync(s => s.UserSettingId == id);
             if (setting == null)
@@ -77,24 +69,13 @@ namespace IntegrationTestDemo.Services
             }
             else
             {
-                return new UserSettingModel {
-                    SettingKey = setting.SettingKey,
-                    SettingValue = setting.SettingValue,
-                    UserId = setting.UserId,
-                    UserSettingId = setting.UserSettingId
-                };
+                return setting;
             }
         }
 
-        public async Task<IEnumerable<UserSettingModel>> GetUserSettingByUserId(string userId)
+        public async Task<IEnumerable<UserSetting>> GetUserSettingByUserId(string userId)
         {
-            return await _context.UserSettings.Where(s => s.UserId == userId).Select(s => new UserSettingModel
-            {
-                SettingKey = s.SettingKey,
-                SettingValue = s.SettingValue,
-                UserId = s.UserId,
-                UserSettingId = s.UserSettingId
-            }).ToListAsync();
+            return await _context.UserSettings.Where(s => s.UserId == userId).ToListAsync();
         }
     }
 }

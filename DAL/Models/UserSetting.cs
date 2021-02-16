@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace IntegrationTestDemo.DAL
+namespace IntegrationTestDemo.DAL.Models
 {
     public class UserSetting
     {

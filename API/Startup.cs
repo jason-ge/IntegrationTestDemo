@@ -1,7 +1,9 @@
 ﻿using System.Linq;
+using System.Reflection;
 using System.Text;
+using IntegrationTestDemo.API.Mapping;
 using IntegrationTestDemo.DAL;
-using IntegrationTestDemo.Services;
+using IntegrationTestDemo.DAL.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -55,6 +57,7 @@ namespace IntegrationTestDemo.API
             {
                 o.AssumeDefaultVersionWhenUnspecified = true;
             });
+            services.AddAutoMapper(o => o.AddProfile<MappingProfile>(), typeof(Program).GetTypeInfo().Assembly);
 
             // Adding Authentication  
             services.AddAuthentication(options =>
@@ -86,7 +89,7 @@ namespace IntegrationTestDemo.API
                     .Build();
             });
             AddDatabaseContext(services);
-            services.AddScoped<IUserSettingService, UserSettingService>();
+            services.AddScoped<IUserSettingRepository, UserSettingRepository>();
 
             services.AddSwaggerGen(c =>
             {
