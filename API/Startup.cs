@@ -1,15 +1,16 @@
 ﻿using System.Linq;
 using System.Text;
+using IntegrationTestDemo.DAL;
 using IntegrationTestDemo.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
@@ -38,7 +39,7 @@ namespace IntegrationTestDemo.API
         /// This method gets called by the runtime. Use this method to add services to the container.
         /// </summary>
         /// <param name="services">services</param>
-        public void ConfigureServices(IServiceCollection services)
+        public virtual void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
 
@@ -84,9 +85,8 @@ namespace IntegrationTestDemo.API
                     .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
                     .Build();
             });
-
-            services.AddMemoryCache();
-            services.AddSingleton<IUserSettingService, UserSettingService>();
+            AddDatabaseContext(services);
+            services.AddScoped<IUserSettingService, UserSettingService>();
 
             services.AddSwaggerGen(c =>
             {
@@ -95,13 +95,18 @@ namespace IntegrationTestDemo.API
             });
         }
 
+        protected virtual void AddDatabaseContext(IServiceCollection services)
+        {
+            services.AddDbContext<UserSettingContext>(options =>
+                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+        }
+
         /// <summary>
         /// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         /// </summary>
         /// <param name="app">app</param>
         /// <param name="env">env</param>
-        /// <param name="loggerFactory">loggerFactory</param>
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
+        public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env, UserSettingContext context)
         {
             // add NLog to ASP.NET Core
             if (env.IsDevelopment())

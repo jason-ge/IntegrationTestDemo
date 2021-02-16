@@ -1,12 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 
-namespace IntegrationTestDemo.API.Models
+namespace IntegrationTestDemo.DAL
 {
-    public class UserSettingModel
+    public class UserSetting
     {
-        public UserSettingModel()
-        {
-        }
+        [Key]
         public int UserSettingId { get; set; }
 
         [Required]

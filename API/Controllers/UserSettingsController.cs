@@ -5,10 +5,12 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using IntegrationTestDemo.API.Models;
+using System.Threading.Tasks;
 
 namespace IntegrationTestDemo.Controllers
 {
     [EnableCors("SiteCorsPolicy")]
+    [ApiController]
     [ApiVersion("1")]
     [Route("v{version:apiVersion}/usersettings")]
 
@@ -21,18 +23,14 @@ namespace IntegrationTestDemo.Controllers
             _userSettingService = userSettingService;
         }
 
-        [HttpPost("AddUserSetting")]
+        [HttpPost]
         [Authorize(Roles ="User")]
-        public IActionResult AddUserSetting([FromBody] UserSettingModel userSetting)
+        public async Task<IActionResult> AddUserSetting([FromBody] UserSettingModel userSetting)
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, ModelState.ToString());
-                }
                 userSetting.UserId = HttpContext.User.Identity.Name;
-                return Ok(_userSettingService.AddUserSetting(userSetting));
+                return Ok(await _userSettingService.AddUserSetting(userSetting));
             }
             catch (Exception ex)
             {
@@ -40,17 +38,13 @@ namespace IntegrationTestDemo.Controllers
             }
         }
 
-        [HttpDelete("DeleteUserSetting/{userSettingId}")]
+        [HttpDelete("{id:int}")]
         [Authorize(Roles = "User")]
-        public IActionResult DeleteUserSetting([FromRoute] Guid userSettingId)
+        public async Task<IActionResult> DeleteUserSetting([FromRoute] int id)
         {
             try
             {
-                if (userSettingId == null)
-                {
-                    return StatusCode(StatusCodes.Status400BadRequest, "Invalid user setting id");
-                }
-                var setting = _userSettingService.GetUserSettingById(userSettingId);
+                var setting = await _userSettingService.GetUserSettingById(id);
                 if (setting == null)
                 {
                     return StatusCode(StatusCodes.Status404NotFound, "User setting ID is not found");
@@ -59,9 +53,9 @@ namespace IntegrationTestDemo.Controllers
                 {
                     return StatusCode(StatusCodes.Status401Unauthorized, "You do not own this setting.");
                 }
-                int count = _userSettingService.DeleteUserSetting(userSettingId);
+                await _userSettingService.DeleteUserSetting(id);
 
-                return Ok(count);
+                return Ok();
             }
             catch (Exception ex)
             {
@@ -69,13 +63,13 @@ namespace IntegrationTestDemo.Controllers
             }
         }
 
-        [HttpGet("GetUserSettings")]
+        [HttpGet]
         [Authorize(Roles = "User")]
-        public IActionResult GetUserSettings()
+        public async Task<IActionResult> GetUserSettings()
         {
             try
             {
-                return Ok(_userSettingService.GetUserSettingByUserId(HttpContext.User.Identity.Name));
+                return Ok(await _userSettingService.GetUserSettingByUserId(HttpContext.User.Identity.Name));
             }
             catch (Exception ex)
             {
@@ -83,9 +77,36 @@ namespace IntegrationTestDemo.Controllers
             }
         }
 
-        [HttpGet("GetUserSettingsByUserId")]
+        [HttpGet("{id:int}")]
+        [Authorize(Roles = "User")]
+        public async Task<IActionResult> GetUserSettingById([FromRoute]int id)
+        {
+            try
+            {
+                var setting = await _userSettingService.GetUserSettingById(id);
+                if (setting == null)
+                {
+                    return StatusCode(StatusCodes.Status404NotFound, "Cannot find the user setting.");
+                }
+                else if (setting.UserId != HttpContext.User.Identity.Name)
+                {
+                    return StatusCode(StatusCodes.Status401Unauthorized, "You do not own this user setting.");
+                }
+                else
+                {
+                    return Ok();
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+            }
+        }
+
+
+        [HttpGet("user/{userId:regex(^\\w[[a-zA-Z0-9_.-]]*$)}")]
         [Authorize(Roles = "Admin")]
-        public IActionResult GetUserSettingsByUserId([FromQuery]string userId)
+        public async Task<IActionResult> GetUserSettingsByUserId([FromRoute]string userId)
         {
             if (string.IsNullOrEmpty(userId))
             {
@@ -94,7 +115,7 @@ namespace IntegrationTestDemo.Controllers
 
             try
             {
-                return Ok(_userSettingService.GetUserSettingByUserId(userId));
+                return Ok(await _userSettingService.GetUserSettingByUserId(userId));
             }
             catch (Exception ex)
             {

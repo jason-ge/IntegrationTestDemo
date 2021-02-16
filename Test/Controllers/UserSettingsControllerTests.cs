@@ -1,12 +1,10 @@
-﻿using IntegrationTestDemo.API;
-using IntegrationTestDemo.API.Models;
+﻿using IntegrationTestDemo.API.Models;
 using IntegrationTestDemo.IntegrationTests.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -28,8 +26,12 @@ namespace IntegrationTestsDemo.IntegrationTests.Controllers
             var builder = new WebHostBuilder()
                 .UseConfiguration(configuration)
                 .UseEnvironment("Development")
-                .UseStartup<Startup>();
-
+                .UseStartup<TestStartup>();
+            //builder.Configure(app =>
+            //{
+            //    var seeder = app.ApplicationServices.GetService<TestDatabaseSeeder>();
+            //    seeder.SeedUserSettings();
+            //});
             TestServer testServer = new TestServer(builder);
             client = testServer.CreateClient();
         }
@@ -46,7 +48,7 @@ namespace IntegrationTestsDemo.IntegrationTests.Controllers
                 SettingValue = "test value3",
                 UserId = "testuser2"
             };
-            await AddUserSetting_Verify(setting3);
+            setting3 = await AddUserSetting_Verify(setting3);
 
             // Login as testuser1
             _jwtToken = await Login("testuser1");
@@ -62,15 +64,15 @@ namespace IntegrationTestsDemo.IntegrationTests.Controllers
                 SettingValue = "test value2",
                 UserId = "testuser1"
             };
-            await AddUserSetting_Verify(setting1);
-            await AddUserSetting_Verify(setting2);
+            setting1 = await AddUserSetting_Verify(setting1);
+            setting2 = await AddUserSetting_Verify(setting2);
 
             await Get_UserSetting(2);
             await Get_UserSetting_Unauthorized();
             await Delete_UserSetting_Successful(setting1.UserSettingId);
             await Delete_UserSetting_NotAuthorized(setting3.UserSettingId);
-            await Delete_UserSetting_NotFound(new Guid());
-            await Get_UserSetting(1);
+            await Delete_UserSetting_NotFound(10000);
+            await Get_UserSetting_NotFound(setting1.UserSettingId);
 
             await Get_UserSetting_ByUserId_Unauthorized("testuser2");
 
@@ -93,9 +95,9 @@ namespace IntegrationTestsDemo.IntegrationTests.Controllers
             return JsonConvert.DeserializeObject<LoginResponse>(await response.Content.ReadAsStringAsync());
         }
 
-        private async Task AddUserSetting_Verify(UserSettingModel setting)
+        private async Task<UserSettingModel> AddUserSetting_Verify(UserSettingModel setting)
         {
-            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Post, "v1/usersettings/AddUserSetting")
+            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Post, "v1/usersettings")
             {
                 Content = new JsonContent(setting)
             };
@@ -109,12 +111,14 @@ namespace IntegrationTestsDemo.IntegrationTests.Controllers
             Assert.Equal(result.SettingKey, setting.SettingKey);
             Assert.Equal(result.SettingValue, setting.SettingValue);
             Assert.Equal(result.UserId, setting.UserId);
+
+            return result;
         }
 
         private async Task Get_UserSetting_ByUserId_Unauthorized(string userId)
         {
             // Act
-            HttpRequestMessage getRequest = new HttpRequestMessage(HttpMethod.Get, $"v1/usersettings/GetUserSettingsByUserId?userId={userId}");
+            HttpRequestMessage getRequest = new HttpRequestMessage(HttpMethod.Get, $"v1/usersettings/user/{userId}");
             getRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _jwtToken.Token);
 
             HttpResponseMessage response = await client.SendAsync(getRequest);
@@ -126,7 +130,7 @@ namespace IntegrationTestsDemo.IntegrationTests.Controllers
         private async Task Get_UserSetting_Unauthorized()
         {
             // Act
-            HttpRequestMessage getRequest = new HttpRequestMessage(HttpMethod.Get, $"v1/usersettings/GetUserSettings");
+            HttpRequestMessage getRequest = new HttpRequestMessage(HttpMethod.Get, $"v1/usersettings");
 
             HttpResponseMessage response = await client.SendAsync(getRequest);
 
@@ -134,10 +138,22 @@ namespace IntegrationTestsDemo.IntegrationTests.Controllers
             Assert.Equal(StatusCodes.Status401Unauthorized, (int)response.StatusCode);
         }
 
+        private async Task Get_UserSetting_NotFound(int id)
+        {
+            // Act
+            HttpRequestMessage getRequest = new HttpRequestMessage(HttpMethod.Get, $"v1/usersettings/{id}");
+            getRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _jwtToken.Token);
+
+            HttpResponseMessage response = await client.SendAsync(getRequest);
+
+            // Fail the test if non-success result
+            Assert.Equal(StatusCodes.Status404NotFound, (int)response.StatusCode);
+        }
+
        private async Task Get_UserSetting(int expectedCount)
         {
             // Act
-            HttpRequestMessage getRequest = new HttpRequestMessage(HttpMethod.Get, $"v1/usersettings/GetUserSettings");
+            HttpRequestMessage getRequest = new HttpRequestMessage(HttpMethod.Get, $"v1/usersettings");
             getRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _jwtToken.Token);
 
             HttpResponseMessage response = await client.SendAsync(getRequest);
@@ -156,7 +172,7 @@ namespace IntegrationTestsDemo.IntegrationTests.Controllers
         private async Task Get_UserSetting_ByUserId_Successful(string userId, int expectedCount)
         {
             // Act
-            HttpRequestMessage getRequest = new HttpRequestMessage(HttpMethod.Get, $"v1/usersettings/GetUserSettingsByUserId?userId={userId}");
+            HttpRequestMessage getRequest = new HttpRequestMessage(HttpMethod.Get, $"v1/usersettings/user/{userId}");
             getRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _jwtToken.Token);
 
             HttpResponseMessage response = await client.SendAsync(getRequest);
@@ -171,10 +187,10 @@ namespace IntegrationTestsDemo.IntegrationTests.Controllers
             Assert.Equal(expectedCount, result.Count());
         }
 
-        private async Task Delete_UserSetting_Successful(Guid id)
+        private async Task Delete_UserSetting_Successful(int id)
         {
             // Arrange
-            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Delete, $"v1/usersettings/DeleteUserSetting/{id}");
+            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Delete, $"v1/usersettings/{id}");
             postRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _jwtToken.Token);
 
             // Act
@@ -182,19 +198,12 @@ namespace IntegrationTestsDemo.IntegrationTests.Controllers
 
             // Fail the test if non-success result
             response.EnsureSuccessStatusCode();
-
-            // Get the response as int
-            var result = JsonConvert.DeserializeObject<int>(await response.Content.ReadAsStringAsync());
-
-            // Assert on correct content
-            Assert.IsType<int>(result);
-            Assert.Equal(1, result);
         }
 
-        private async Task Delete_UserSetting_NotAuthorized(Guid id)
+        private async Task Delete_UserSetting_NotAuthorized(int id)
         {
             // Arrange
-            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Delete, $"v1/usersettings/DeleteUserSetting/{id}");
+            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Delete, $"v1/usersettings/{id}");
             postRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _jwtToken.Token);
 
             // Act
@@ -204,10 +213,10 @@ namespace IntegrationTestsDemo.IntegrationTests.Controllers
             Assert.Equal(StatusCodes.Status401Unauthorized, (int)response.StatusCode);
         }
 
-        private async Task Delete_UserSetting_NotFound(Guid id)
+        private async Task Delete_UserSetting_NotFound(int id)
         {
             // Arrange
-            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Delete, $"v1/usersettings/DeleteUserSetting/{id}");
+            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Delete, $"v1/usersettings/{id}");
             postRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _jwtToken.Token);
 
             // Act

@@ -13,6 +13,7 @@ using System.Text;
 namespace IntegrationTestDemo.API.Controllers
 {
     [EnableCors("SiteCorsPolicy")]
+    [ApiController]
     [ApiVersion("1")]
     [Route("v{version:apiVersion}/account")]
     public class AccountConroller : ControllerBase

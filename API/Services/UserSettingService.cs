@@ -1,76 +1,100 @@
 ﻿using IntegrationTestDemo.API.Models;
-using Microsoft.Extensions.Caching.Memory;
+using IntegrationTestDemo.DAL;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace IntegrationTestDemo.Services
 {
     public class UserSettingService : IUserSettingService
     {
-        private readonly IMemoryCache _cache;
-        public UserSettingService(IMemoryCache cache)
+        private readonly UserSettingContext _context;
+        public UserSettingService(UserSettingContext context)
         {
-            _cache = cache;
+            _context = context;
         }
 
-        public UserSettingModel AddUserSetting(UserSettingModel userSetting)
+        public async Task<UserSettingModel> AddUserSetting(UserSettingModel userSetting)
         {
-            List<UserSettingModel> settings = _cache.Get<List<UserSettingModel>>("settings");
-            if (settings == null)
-            {
-                settings = new List<UserSettingModel>();
-            }
-            var setting = settings.FirstOrDefault(s => s.UserId == userSetting.UserId && s.SettingKey == userSetting.SettingKey);
+            var setting = await _context.UserSettings.FirstOrDefaultAsync(s => s.UserId == userSetting.UserId && s.SettingKey == userSetting.SettingKey);
             if (setting != null)
             {
                 throw new ArgumentException("The user setting already exists");
             }
             else
             {
-                settings.Add(userSetting);
-                _cache.Set("settings", settings);
+                setting = new UserSetting
+                {
+                    SettingKey = userSetting.SettingKey,
+                    SettingValue = userSetting.SettingValue,
+                    UserId = userSetting.UserId
+                };
+                await _context.UserSettings.AddAsync(setting);
+                await _context.SaveChangesAsync();
 
+                userSetting.UserSettingId = setting.UserSettingId;
                 return userSetting;
             }
         }
 
-        public int DeleteUserSetting(Guid id)
+        public async Task<UserSettingModel> UpdateUserSetting(UserSettingModel userSetting)
         {
-            List<UserSettingModel> settings = _cache.Get<List<UserSettingModel>>("settings");
-            if (settings == null)
-            {
-                return 0;
-            }
-            int count = settings.RemoveAll(s => s.UserSettingId == id);
-            _cache.Set("settings", settings);
-            return count;
-        }
-
-        public UserSettingModel GetUserSettingById(Guid id)
-        {
-            List<UserSettingModel> settings = _cache.Get<List<UserSettingModel>>("settings");
-            if (settings == null)
+            var setting = await _context.UserSettings.FirstOrDefaultAsync(s => s.UserSettingId == userSetting.UserSettingId && s.SettingKey == userSetting.SettingKey);
+            if (setting == null)
             {
                 return null;
             }
             else
             {
-                return settings.Where(s => s.UserSettingId == id).FirstOrDefault();
+                setting.SettingValue = userSetting.SettingValue;
+                await _context.SaveChangesAsync();
+
+                return userSetting;
+            }
+        }
+        public async Task DeleteUserSetting(int id)
+        {
+            var setting = await _context.UserSettings.FirstOrDefaultAsync(s => s.UserSettingId == id);
+            if (setting == null)
+            {
+                throw new ArgumentException("The user setting does not exist");
+            }
+            else
+            {
+                _context.UserSettings.Remove(setting);
+                await _context.SaveChangesAsync();
             }
         }
 
-        public IEnumerable<UserSettingModel> GetUserSettingByUserId(string userId)
+        public async Task<UserSettingModel> GetUserSettingById(int id)
         {
-            List<UserSettingModel> settings = _cache.Get<List<UserSettingModel>>("settings");
-            if (settings == null)
+            var setting = await _context.UserSettings.FirstOrDefaultAsync(s => s.UserSettingId == id);
+            if (setting == null)
             {
                 return null;
             }
             else
             {
-                return settings.Where(s => s.UserId == userId).ToList();
+                return new UserSettingModel {
+                    SettingKey = setting.SettingKey,
+                    SettingValue = setting.SettingValue,
+                    UserId = setting.UserId,
+                    UserSettingId = setting.UserSettingId
+                };
             }
+        }
+
+        public async Task<IEnumerable<UserSettingModel>> GetUserSettingByUserId(string userId)
+        {
+            return await _context.UserSettings.Where(s => s.UserId == userId).Select(s => new UserSettingModel
+            {
+                SettingKey = s.SettingKey,
+                SettingValue = s.SettingValue,
+                UserId = s.UserId,
+                UserSettingId = s.UserSettingId
+            }).ToListAsync();
         }
     }
 }

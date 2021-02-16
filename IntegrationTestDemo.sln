@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IntegrationTestDemo.API", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IntegrationTestDemo.IntegrationTests", "Test\IntegrationTestDemo.IntegrationTests.csproj", "{D3F83742-30F2-4DE0-963D-9F8F8B1F2665}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IntegrationTestDemo.DAL", "DAL\IntegrationTestDemo.DAL.csproj", "{F54970B1-17AD-4B70-9BA0-621321635F65}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{D3F83742-30F2-4DE0-963D-9F8F8B1F2665}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D3F83742-30F2-4DE0-963D-9F8F8B1F2665}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D3F83742-30F2-4DE0-963D-9F8F8B1F2665}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F54970B1-17AD-4B70-9BA0-621321635F65}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F54970B1-17AD-4B70-9BA0-621321635F65}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F54970B1-17AD-4B70-9BA0-621321635F65}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F54970B1-17AD-4B70-9BA0-621321635F65}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

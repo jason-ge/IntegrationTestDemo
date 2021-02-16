@@ -1,17 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using IntegrationTestDemo.API.Models;
 
 namespace IntegrationTestDemo.Services
 {
     public interface IUserSettingService
     {
-        UserSettingModel AddUserSetting(UserSettingModel userSetting);
+        Task<UserSettingModel> AddUserSetting(UserSettingModel userSetting);
 
-        int DeleteUserSetting(Guid id);
+        Task DeleteUserSetting(int id);
 
-        IEnumerable<UserSettingModel> GetUserSettingByUserId(string userId);
+        Task<IEnumerable<UserSettingModel>> GetUserSettingByUserId(string userId);
 
-        UserSettingModel GetUserSettingById(Guid id);
+        Task<UserSettingModel> GetUserSettingById(int id);
     }
 }
