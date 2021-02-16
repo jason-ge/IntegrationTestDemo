@@ -27,11 +27,6 @@ namespace IntegrationTestsDemo.IntegrationTests.Controllers
                 .UseConfiguration(configuration)
                 .UseEnvironment("Development")
                 .UseStartup<TestStartup>();
-            //builder.Configure(app =>
-            //{
-            //    var seeder = app.ApplicationServices.GetService<TestDatabaseSeeder>();
-            //    seeder.SeedUserSettings();
-            //});
             TestServer testServer = new TestServer(builder);
             client = testServer.CreateClient();
         }
